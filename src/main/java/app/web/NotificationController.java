@@ -48,4 +48,20 @@ public class NotificationController {
 
 //        return ResponseEntity.ok("Hello {%s} user!".formatted(name));
     }
+
+    @DeleteMapping
+    public ResponseEntity<Void> deleteAll(@RequestParam("userId") UUID userId) {
+
+        notificationService.deleteAll(userId);
+
+        return ResponseEntity.ok(null);
+    }
+
+    @PutMapping
+    public ResponseEntity<Void> retryFailed(@RequestParam("userId") UUID userId) {
+
+        notificationService.retryFailed(userId);
+
+        return ResponseEntity.ok(null);
+    }
 }

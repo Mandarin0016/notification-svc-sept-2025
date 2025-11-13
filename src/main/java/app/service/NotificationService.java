@@ -1,5 +1,6 @@
 package app.service;
 
+import app.exception.NotificationPreferenceDisabledException;
 import app.model.Notification;
 import app.model.NotificationPreference;
 import app.model.NotificationStatus;
@@ -48,11 +49,54 @@ public class NotificationService {
                 .build();
 
         // Sending email
-
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         mailMessage.setTo(preference.getContactInfo());
         mailMessage.setSubject(request.getSubject());
         mailMessage.setText(request.getBody());
+
+        sendMail(mailMessage, notification);
+
+        return notificationRepository.save(notification);
+    }
+
+    public List<Notification> getHistory(UUID userId) {
+
+        return notificationRepository.findByUserId(userId).stream().filter(n -> !n.isDeleted()).toList();
+    }
+
+    public void deleteAll(UUID userId) {
+
+        List<Notification> notifications = getHistory(userId);
+
+        for (Notification notification : notifications) {
+            notification.setDeleted(true);
+            notificationRepository.save(notification);
+        }
+    }
+
+    public void retryFailed(UUID userId) {
+
+        NotificationPreference preference = preferenceService.getByUserId(userId);
+        if (!preference.isEnabled()) {
+            throw new NotificationPreferenceDisabledException("User does turned off their notifications.");
+        }
+
+        List<Notification> failedNotifications = getHistory(userId).stream()
+                .filter(n -> n.getStatus() == NotificationStatus.FAILED)
+                .toList();
+
+        for (Notification failedNotification : failedNotifications) {
+
+            SimpleMailMessage newEmail = new SimpleMailMessage();
+            newEmail.setTo(preference.getContactInfo());
+            newEmail.setSubject(failedNotification.getSubject());
+            newEmail.setText(failedNotification.getBody());
+
+            sendMail(newEmail, failedNotification);
+        }
+    }
+
+    private void sendMail(SimpleMailMessage mailMessage, Notification notification) {
 
         try {
             mailSender.send(mailMessage);
@@ -61,12 +105,5 @@ public class NotificationService {
             log.error("Failed email due to: {}", e.getMessage());
             notification.setStatus(NotificationStatus.FAILED);
         }
-
-        return notificationRepository.save(notification);
-    }
-
-    public List<Notification> getHistory(UUID userId) {
-
-        return notificationRepository.findByUserId(userId).stream().filter(n -> !n.isDeleted()).toList();
     }
 }
