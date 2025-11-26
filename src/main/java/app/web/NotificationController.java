@@ -5,6 +5,8 @@ import app.service.NotificationService;
 import app.web.dto.NotificationRequest;
 import app.web.dto.NotificationResponse;
 import app.web.mapper.DtoMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/notifications")
+@Tag(name = "My notification controller", description = "These endpoints here manage user notifications.")
 public class NotificationController {
 
     private final NotificationService notificationService;
@@ -22,6 +25,7 @@ public class NotificationController {
         this.notificationService = notificationService;
     }
 
+    @Operation(deprecated = true, summary = "Sends a new notification to the user", description = "just some dummy description")
     @PostMapping
     public ResponseEntity<NotificationResponse> sendNotification(@RequestBody NotificationRequest request) {
 
